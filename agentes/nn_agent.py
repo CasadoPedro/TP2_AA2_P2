@@ -12,9 +12,14 @@ class NNAgent(Agent):
         # Cargar el modelo entrenado
         self.model = tf.keras.models.load_model(model_path)
 
+     
     def act(self, state):
         """
-        COMPLETAR: Implementar la función de acción.
-        Debe transformar el estado al formato de entrada de la red y devolver la acción con mayor Q.
+        Usa la red neuronal entrenada para elegir la mejor acción dada un estado.
         """
-        raise NotImplementedError("Completar la función act para NNAgent")
+        state_array = np.array(state).reshape(1, -1)  # Formato compatible con la red
+        q_values = self.model.predict(state_array, verbose=0)  # Predicción
+        action_idx = np.argmax(q_values)
+        return self.actions[action_idx]
+
+
