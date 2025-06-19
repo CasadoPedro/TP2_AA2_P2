@@ -48,7 +48,7 @@ class QAgent(Agent):
         """
         Discretiza el estado continuo en un estado discreto (tupla).
         """
-        # state_dict['player_y'] es el centro de la paleta del jugador (de FlappyBird.getGameState)
+        # state['player_y'] es el centro de la paleta del jugador (de FlappyBird.getGameState)
         player_center_y = state["player_y"]
 
         # 1. Posición relativa del centro del jugador respecto al centro del gap en las tuberías
@@ -74,7 +74,7 @@ class QAgent(Agent):
         )
 
         # 3. Velocidad del jugador en Y
-        # state_dict['player_vel'] es la velocidad del jugador (de FlappyBird.getGameState)
+        # state['player_vel'] es la velocidad del jugador (de FlappyBird.getGameState)
         player_velocity = state["player_vel"]
 
         clipped_velocity = max(-10.0, min(10.0, player_velocity))
