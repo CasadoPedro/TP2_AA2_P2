@@ -16,10 +16,10 @@ class QAgent(Agent):
         game=None,
         learning_rate=0.1,
         discount_factor=0.99,
-        epsilon=1.0,
+        epsilon=0.0,
         epsilon_decay=0.995,
         min_epsilon=0.01,
-        load_q_table_path="flappy_birds_q_table.pkl",
+        load_q_table_path="flappy_birds_q_table_final.pkl",
     ):
         super().__init__(actions, game)
         self.lr = learning_rate
