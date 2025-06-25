@@ -8,13 +8,20 @@ from agentes.dq_agent import QAgent
 game = FlappyBird()
 env = PLE(game, display_screen=True, fps=30)
 env.init()
-actions = env.getActionSet()  # Ej: [None, 119 (w), 115 (s)]
+actions = env.getActionSet()
 
 # Crear el agente
 # Descomenta la línea de load_q_table_path si quieres cargar una tabla pre-entrenada
-agent = QAgent(actions, game, epsilon=1.0, min_epsilon=0.05, epsilon_decay=0.995,
-               learning_rate=0.2, discount_factor=0.95,
-               load_q_table_path="flappy_birds_q_table.pkl")
+agent = QAgent(
+    actions,
+    game,
+    epsilon=1.0,
+    min_epsilon=0.05,
+    epsilon_decay=0.995,
+    learning_rate=0.2,
+    discount_factor=0.95,
+    load_q_table_path="flappy_birds_q_table.pkl",
+)
 
 # --- Bucle de Entrenamiento ---
 num_episodes = 20000
@@ -49,6 +56,7 @@ for episode in range(num_episodes):
         current_episode_reward += reward
 
         if env.display_screen:
+            print(f"Estado: {agent.discretize_state(state_dict)}")
             time.sleep(0.01)
 
         if done:
@@ -59,7 +67,9 @@ for episode in range(num_episodes):
 
     if (episode + 1) % 100 == 0:
         avg_reward = np.mean(rewards_all_episodes[-100:])
-        print(f"Episodio: {episode+1}/{num_episodes}, Recompensa Promedio (últimos 100): {avg_reward:.2f}, Epsilon: {agent.epsilon:.3f}")
+        print(
+            f"Episodio: {episode + 1}/{num_episodes}, Recompensa Promedio (últimos 100): {avg_reward:.2f}, Epsilon: {agent.epsilon:.3f}"
+        )
         agent.save_q_table("flappy_birds_q_table.pkl")
 
 print("Entrenamiento completado.")
@@ -75,7 +85,7 @@ for episode in range(5):
     state_dict = env.getGameState()
     done = False
     total_reward_episode = 0
-    print(f"Iniciando episodio de prueba {episode+1}")
+    print(f"Iniciando episodio de prueba {episode + 1}")
     while not done:
         action = agent.act(state_dict)
         reward = env.act(action)
@@ -83,4 +93,4 @@ for episode in range(5):
         done = env.game_over()
         total_reward_episode += reward
         time.sleep(0.03)
-    print(f"Recompensa episodio de prueba {episode+1}: {total_reward_episode}")
+    print(f"Recompensa episodio de prueba {episode + 1}: {total_reward_episode}")
