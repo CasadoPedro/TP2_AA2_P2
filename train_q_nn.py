@@ -4,63 +4,68 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
 
 # --- Cargar Q-table entrenada ---
-QTABLE_PATH = "flappy_birds_q_table_final.pkl"  # Cambia el path si es necesario
+QTABLE_PATH = "flappy_birds_q_table_final.pkl"
+MODEL_PATH = "flappy_q_nn_model.keras"
 with open(QTABLE_PATH, "rb") as f:
     q_table = pickle.load(f)
 
 # --- Preparar datos para entrenamiento ---
 # Convertir la Q-table en X (estados) e y (valores Q para cada acción)
-X = []  # Estados discretos
-y = []  # Q-values para cada acción
-for state, q_values in q_table.items():
-    X.append(state)
-    y.append(q_values)
-X = np.array(X)
-y = np.array(y)
-print(f"Datos cargados: {len(X)} estados, {len(y)} valores Q")
-print(f"Forma de X: {X.shape}, Forma de y: {y.shape}")
-print(f"Primer estado: {X[0]}, Primer valor Q: {y[0]}")
-print(np.min(y), np.max(y))
+# --- Preparar datos ---
+X, y = zip(*q_table.items())
+X = np.array(X, dtype=np.float32)
+y = np.array(y, dtype=np.float32)
+print(f"Dataset: {len(X)} estados | X shape: {X.shape}, y shape: {y.shape}")
+print(f"Rango de Q-values: {np.min(y):.3f} a {np.max(y):.3f}")
 
 # --- Definir la red neuronal ---
 model = keras.Sequential(
     [
         layers.Input(shape=(X.shape[1],)),  # Tamaño del estado
-        # Normalización de entrada
-        # layers.BatchNormalization(),
         # Capas ocultas
         layers.Dense(32, activation="relu"),
-        layers.Dropout(0.2),
-        layers.Dense(32, activation="relu"),
+        layers.Dropout(0.3),
+        layers.Dense(64, activation="relu"),
         layers.Dense(y.shape[1]),  # cantidad de acciones posibles
     ]
 )
 
-model.compile(optimizer="adam", loss="mse", metrics=["accuracy"])
+model.compile(optimizer="adam", loss="mse", metrics=["mae"])
 # Usamos EarlyStopping para evitar sobreajuste
-early_stop = EarlyStopping(monitor="val_loss", patience=15, restore_best_weights=True)
-
+early_stop = EarlyStopping(monitor="val_loss", patience=20, restore_best_weights=True)
+# Reduce el learning rate si la validación no mejora
+reduce_lr = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=10, min_lr=1e-5, verbose=1)
 # --- Entrenar la red neuronal ---
-history = model.fit(X, y, epochs=150, batch_size=64, validation_split=0.2, verbose=1, callbacks=[early_stop])
-# --- Mostrar resultados del entrenamiento ---
-plt.plot(history.history["loss"], label="Loss")
-plt.plot(history.history["val_loss"], label="Val Loss")
-plt.xlabel("Época")
+history = model.fit(
+    X, y, epochs=150, batch_size=64, validation_split=0.2, shuffle=True, verbose=1, callbacks=[early_stop, reduce_lr]
+)
+# --- Visualización ---
+plt.figure(figsize=(10, 4))
+
+plt.subplot(1, 2, 1)
+plt.plot(history.history["loss"], label="MSE - Entrenamiento")
+plt.plot(history.history["val_loss"], label="MSE - Validación")
+plt.title("Pérdida (MSE)")
+plt.xlabel("Épocas")
 plt.ylabel("Error cuadrático medio")
 plt.legend()
-plt.title("Curva de entrenamiento del modelo Q-NN")
-# plt.show()
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history["mae"], label="MAE - Entrenamiento")
+plt.plot(history.history["val_mae"], label="MAE - Validación")
+plt.title("Error absoluto medio (MAE)")
+plt.xlabel("Épocas")
+plt.ylabel("MAE")
+plt.legend()
+
+plt.tight_layout()
+plt.savefig("training_metrics.png")  # Guardamos la imagen de las métricas
 
 # --- Guardar el modelo entrenado ---
 
-model.save("flappy_q_nn_model.keras")
-print("Modelo guardado como TensorFlow SavedModel en flappy_q_nn_model/")
-
-# --- Notas para los alumnos ---
-# - Puedes modificar la arquitectura de la red y los hiperparámetros.
-# - Puedes usar la red entrenada para aproximar la Q-table y luego usarla en un agente tipo DQN.
-# - Si tu estado es una tupla de enteros, no hace falta normalizar, pero puedes probarlo.
-# - Si tienes dudas sobre cómo usar el modelo para predecir acciones, consulta la documentación de Keras.
+model.save(MODEL_PATH)
+print(f"Modelo guardado como TensorFlow SavedModel en: {MODEL_PATH}")
